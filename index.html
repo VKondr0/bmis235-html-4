@@ -2,7 +2,7 @@
 <!--
   Author: Vitalii Kondratiuk
   GU username: vkondratiuk
-  Course: BMIS 235 - HTML-3
+  Course: BMIS 235 - HTML-4
 -->
 <html lang="en">
 <head>
@@ -141,7 +141,6 @@
 }
 </style>
 
-<!-- html -->
 <h2 class="f1-title">F1 drivers I like</h2>
 
 <div class="f1-cards">
@@ -179,7 +178,6 @@
     </button>
 </div>
 
-<!-- js flipping -->
 <script>
 document.querySelectorAll(".showcase .f1-card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -190,6 +188,297 @@ document.querySelectorAll(".showcase .f1-card").forEach((card) => {
 </script>
 
 </div>
+
+
+<!--
+  AI piece: F1 reaction game made with ChatGPT.
+  The lights turn on one by one and then go out after a random delay.
+  JavaScript measures the reaction time and saves the best result.
+-->
+<section class="reaction-game">
+
+<style>
+.reaction-game {
+    max-width: 700px;
+    margin: 35px auto;
+    padding: 25px;
+    box-sizing: border-box;
+    background: #171c24;
+    border: 1px solid #30343b;
+    border-radius: 12px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+.reaction-game h2 {
+    margin: 0 0 10px;
+    color: white;
+    font-size: 26px;
+}
+
+.reaction-game .reaction-info {
+    margin: 0 auto 25px;
+    font-size: 15px;
+    color: #aeb4bd;
+}
+
+.reaction-game .reaction-lights {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 25px 10px;
+    background: #101419;
+    border-radius: 10px;
+}
+
+.reaction-game .reaction-light {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: #252b35;
+    border-radius: 8px;
+}
+
+.reaction-game .reaction-light span {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #420b0b;
+    transition: background 0.1s;
+}
+
+.reaction-game .reaction-light.on span {
+    background: #ff2020;
+    box-shadow: 0 0 15px #e10600;
+}
+
+.reaction-game .reaction-result {
+    min-height: 60px;
+    margin: 25px 0 10px;
+    font-size: 38px;
+    font-weight: bold;
+    color: white;
+}
+
+.reaction-game .reaction-message {
+    min-height: 22px;
+    margin: 0 0 20px;
+    color: #aeb4bd;
+    font-size: 15px;
+}
+
+.reaction-game .reaction-button {
+    width: 100%;
+    max-width: 300px;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #e10600;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.reaction-game .reaction-button:hover {
+    background: #ff2424;
+}
+
+.reaction-game .reaction-button:focus-visible {
+    outline: 3px solid white;
+    outline-offset: 3px;
+}
+
+.reaction-game .reaction-best {
+    margin: 20px 0 0;
+    color: #aeb4bd;
+    font-size: 14px;
+}
+
+@media (max-width: 520px) {
+    .reaction-game {
+        padding: 15px;
+    }
+
+    .reaction-game .reaction-lights {
+        gap: 5px;
+    }
+
+    .reaction-game .reaction-light {
+        padding: 5px;
+        gap: 5px;
+    }
+
+    .reaction-game .reaction-light span {
+        width: 22px;
+        height: 22px;
+    }
+
+    .reaction-game .reaction-result {
+        font-size: 30px;
+    }
+}
+</style>
+
+<h2>F1 Reaction Challenge</h2>
+
+<p class="reaction-info">
+    Wait for the five red lights to go out.
+    Then click as fast as you can.
+</p>
+
+<div class="reaction-lights" aria-hidden="true">
+    <div class="reaction-light">
+        <span></span><span></span>
+    </div>
+    <div class="reaction-light">
+        <span></span><span></span>
+    </div>
+    <div class="reaction-light">
+        <span></span><span></span>
+    </div>
+    <div class="reaction-light">
+        <span></span><span></span>
+    </div>
+    <div class="reaction-light">
+        <span></span><span></span>
+    </div>
+</div>
+
+<div class="reaction-result" aria-live="polite">
+    READY?
+</div>
+
+<p class="reaction-message">Test your reaction time</p>
+
+<button class="reaction-button" type="button">
+    START
+</button>
+
+<p class="reaction-best">Best time: --</p>
+
+<script>
+(() => {
+    const game = document.querySelector(".reaction-game");
+    const lights = game.querySelectorAll(".reaction-light");
+    const button = game.querySelector(".reaction-button");
+    const result = game.querySelector(".reaction-result");
+    const message = game.querySelector(".reaction-message");
+    const bestDisplay = game.querySelector(".reaction-best");
+
+    let state = "ready";
+    let startTime = 0;
+    let timers = [];
+    let bestTime = null;
+
+    try {
+        const saved = localStorage.getItem("f1ReactionBest");
+
+        if (saved !== null &&
+            Number.isFinite(Number(saved)) &&
+            Number(saved) >= 0) {
+            bestTime = Number(saved);
+            bestDisplay.textContent = "Best time: " + bestTime + " ms";
+        }
+    } catch (error) {
+        // Game works without saved results
+    }
+
+    function clearLights() {
+        lights.forEach(light => {
+            light.classList.remove("on");
+        });
+    }
+
+    function clearTimers() {
+        timers.forEach(timer => clearTimeout(timer));
+        timers = [];
+    }
+
+    function startGame() {
+        clearTimers();
+        clearLights();
+
+        state = "waiting";
+        result.textContent = "GET READY";
+        message.textContent = "Don't click before lights out";
+        button.textContent = "WAIT...";
+
+        lights.forEach((light, index) => {
+            const timer = setTimeout(() => {
+                light.classList.add("on");
+            }, (index + 1) * 1000);
+
+            timers.push(timer);
+        });
+
+        const randomDelay = 500 + Math.random() * 2000;
+
+        const timer = setTimeout(() => {
+            clearLights();
+            startTime = performance.now();
+
+            state = "go";
+            result.textContent = "GO!";
+            message.textContent = "Click now!";
+            button.textContent = "CLICK!";
+        }, 5000 + randomDelay);
+
+        timers.push(timer);
+    }
+
+    function jumpStart() {
+        clearTimers();
+        clearLights();
+
+        state = "finished";
+        result.textContent = "JUMP START";
+        message.textContent = "You clicked too early";
+        button.textContent = "TRY AGAIN";
+    }
+
+    function finishGame() {
+        const reaction = Math.round(performance.now() - startTime);
+
+        state = "finished";
+        result.textContent = reaction + " ms";
+        button.textContent = "TRY AGAIN";
+
+        if (reaction < 200) {
+            message.textContent = "Amazing reaction!";
+        } else if (reaction < 350) {
+            message.textContent = "Nice start!";
+        } else {
+            message.textContent = "Try to beat your time";
+        }
+
+        if (bestTime === null || reaction < bestTime) {
+            bestTime = reaction;
+            bestDisplay.textContent = "Best time: " + bestTime + " ms";
+
+            try {
+                localStorage.setItem("f1ReactionBest", bestTime);
+            } catch (error) {
+                // Saving is optional
+            }
+        }
+    }
+
+    button.addEventListener("click", () => {
+        if (state === "ready" || state === "finished") {
+            startGame();
+        } else if (state === "waiting") {
+            jumpStart();
+        } else if (state === "go") {
+            finishGame();
+        }
+    });
+})();
+</script>
+
+</section>
 
 <footer>Built by Vitalii Kondratiuk &middot; BMIS 235</footer>
 
