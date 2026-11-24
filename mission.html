@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="styles.css">
   <script defer src="js/missions.js"></script>
   <script defer src="js/app.js"></script>
+  <script defer src="js/markup.js"></script>
+  <script defer src="js/virtual-files.js"></script>
+  <script defer src="js/car-art.js"></script>
   <script defer src="js/checker.js"></script>
   <script defer src="js/preview.js"></script>
   <script defer src="js/learning.js"></script>
@@ -27,7 +30,7 @@
       </a>
       <nav class="primary" aria-label="Main navigation">
         <a href="index.html">Mission Control</a>
-        <a href="html-garage.html" aria-current="location">HTML Garage</a>
+        <a href="html-garage.html">HTML Garage</a>
         <a href="links-and-paths.html">Links and Paths</a>
         <a href="css-lab.html">CSS Lab</a>
         <a href="final-grand-prix.html">Final Grand Prix</a>
@@ -36,7 +39,7 @@
     </div>
   </header>
   <main class="wrap" id="main" tabindex="-1">
-    <p class="breadcrumb"><a id="chapter" href="html-garage.html">HTML Garage</a> / Mission workspace</p>
+    <p class="breadcrumb"><a id="chapter" href="index.html#modules">Mission Control</a> / Mission workspace</p>
     <noscript><p>Enable JavaScript to edit, preview and check your mission.</p></noscript>
     <p id="unavailable" hidden>This mission is unavailable. <a href="index.html#modules">Browse module briefings</a>.</p>
     <div id="workspace" hidden>
@@ -46,6 +49,7 @@
         <p class="lead" id="objective"></p>
       </header>
       <p class="concept" id="concept"></p>
+      <p class="expected"><strong>What to look for</strong> <span id="expected"></span></p>
       <p id="storage-note" role="status"></p>
       <div class="workbench">
         <section class="panel station" aria-labelledby="editor-title">
@@ -53,6 +57,10 @@
             <h2 id="editor-title"><label for="editor">Code editor</label></h2>
             <span class="label" id="filename"></span>
           </header>
+          <details id="files-panel" hidden open>
+            <summary>Virtual project files</summary>
+            <ul id="file-tree" aria-label="Virtual project directory"></ul>
+          </details>
           <div class="code-area">
             <div class="gutter" aria-hidden="true"><div id="lines">1</div></div>
             <textarea id="editor" rows="9" wrap="off" spellcheck="false" autocapitalize="off"
@@ -66,7 +74,9 @@
         </section>
         <section class="panel station" aria-labelledby="preview-title">
           <header class="station-head"><h2 id="preview-title">Visual preview</h2></header>
+          <p class="preview-tab" id="tab-title" hidden></p>
           <iframe id="preview" title="Your rendered code" sandbox="" referrerpolicy="no-referrer"></iframe>
+          <div id="preview-controls" class="preview-controls"></div>
           <p class="tool-note" id="preview-status" role="status"></p>
         </section>
       </div>
@@ -95,7 +105,11 @@
           <p id="explanation"></p>
         </div>
       </section>
-      <a class="text-link" id="back" href="html-garage.html">Back to HTML Garage</a>
+      <nav class="mission-nav" aria-label="Mission sequence">
+        <a id="prev" hidden></a>
+        <a class="text-link" id="back" href="html-garage.html">Back to HTML Garage</a>
+        <a id="next" hidden></a>
+      </nav>
     </div>
   </main>
   <footer>

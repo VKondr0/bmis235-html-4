@@ -14,16 +14,21 @@ async page => {
     const tab = await context.newPage();
     const errors = [];
     const restrictions = [];
-    tab.on("pageerror", error => errors.push(error.message));
-    tab.on("console", message => {
-      if (message.type() !== "error") return;
-      const detail = message.text();
-      if (detail.startsWith("Blocked script execution in 'about:srcdoc'") ||
+    function recordBrowserMessage(detail, url) {
+      // WebKit can surface a sandbox-origin denial as a page error; Chromium
+      // reports policy denials through the console. Preserve both as evidence.
+      if ((detail.startsWith("Blocked a frame at") && detail.includes('lacks the "allow-same-origin" flag')) ||
+          detail.startsWith("Blocked script execution in 'about:srcdoc'") ||
           (detail.includes("Content Security Policy") && detail.includes("preview-check.invalid"))) {
         restrictions.push(detail);
       } else {
-        errors.push(detail);
+        errors.push(url ? detail + " (" + url + ")" : detail);
       }
+    }
+    tab.on("pageerror", error => recordBrowserMessage(error.message));
+    tab.on("console", message => {
+      if (message.type() !== "error") return;
+      recordBrowserMessage(message.text(), message.location().url);
     });
     const missionURL = base + "mission.html?id=missing-heading";
     const key = "f1CodeGarage.progress.v1";
@@ -34,7 +39,8 @@ async page => {
     const text = id => tab.locator("#" + id).innerText();
 
     await tab.goto(base + "index.html");
-    await tab.locator("[data-mission-link]").click();
+    await tab.locator("[data-mission-link]").first().click();
+    await editor.waitFor({ state: "visible" });
     assert(tab.url() === missionURL, "Dashboard opens the mission");
     const starter = await editor.inputValue();
     const correct = "<h1>Scuderia Ferrari</h1>";
@@ -61,6 +67,7 @@ async page => {
     assert(!mismatches.length, cases.length + " source and structure cases: " + JSON.stringify(mismatches));
 
     await click("check");
+    await tab.locator("#feedback").filter({ hasText: "</h2>" }).waitFor();
     assert((await text("feedback")).includes("</h2>") && await editor.inputValue() === starter, "Specific feedback preserves a failed draft");
     const draft = "<h1>Temporary name</h1>\n  ";
     await editor.fill(draft);
@@ -78,8 +85,8 @@ async page => {
     await click("hint");
     assert((await record()).completion === "independent", "Later help preserves the original completion");
     await tab.locator("#back").click();
-    assert(tab.url().endsWith("html-garage.html") && (await tab.locator("[data-mission-status]").innerText()).includes("independently"), "Chapter reflects saved progress");
-    await tab.locator("[data-mission-link]").click();
+    assert(tab.url().endsWith("html-garage.html") && (await tab.locator("[data-mission-status]").first().innerText()).includes("independently"), "Chapter reflects saved progress");
+    await tab.locator("[data-mission-link]").first().click();
     assert((await state()).lastVisited === "missing-heading", "Chapter launch and last visited mission");
 
     // Begin a fresh learner profile in this isolated context.
@@ -142,7 +149,7 @@ async page => {
     assert(await cssSample.evaluate(el => getComputedStyle(el).color) === "rgb(24, 48, 72)", "CSS-only preview uses mission-provided HTML");
 
     await editor.fill(" ".repeat(200) + correct);
-    for (const width of [320, 390, 768, 1024, 1440]) {
+    for (const width of [320, 375, 390, 768, 1024, 1440]) {
       await tab.setViewportSize({width, height:900});
       const layout = await tab.evaluate(() => {
         const [editor, preview] = [...document.querySelectorAll(".station")].map(el => el.getBoundingClientRect());
@@ -151,11 +158,187 @@ async page => {
       assert(layout.fits && layout.stacked === (width <= 768), "Workbench layout at " + width + "px");
     }
     await tab.goto(base + "index.html");
-    assert((await tab.locator("[data-mission-link]").innerText()).startsWith("Review") && (await tab.locator("[data-mission-status]").innerText()).includes("with help"), "Dashboard restores completed mission status");
+    assert((await tab.locator("[data-mission-link]").innerText()).startsWith("Review") && (await tab.locator("[data-mission-status]").first().innerText()).includes("with help"), "Dashboard restores completed mission status");
     await tab.goto(base + "mission.html?id=unknown");
     assert(await tab.locator("#unavailable").isVisible() && await tab.locator("#workspace").isHidden(), "Unknown mission shows a working return link");
 
-    for (const bad of ["{broken", '{"version":1,"missions":{"missing-heading":{"attempts":-9,"hints":"x","draft":false}}}', '{"version":99}']) {
+    // Seed the exact v1 shape used before the new chapters were added.
+    const original = { draft: "<h1>Saved from Stage 2</h1>", attempts: 7, hints: 1, revealed: true, completion: "assisted" };
+    await tab.evaluate(([k, old]) => localStorage.setItem(k, JSON.stringify({
+      version: 1, lastVisited: "missing-heading", missions: { "missing-heading": old }
+    })), [key, original]);
+    await tab.goto(missionURL);
+    assert(await editor.inputValue() === original.draft && JSON.stringify(await record()) === JSON.stringify(original), "Existing Stage 2 record restores without migration");
+
+    const missions = await tab.evaluate(() => CodeGarage.missions);
+    const invalid = {
+      "driver-profile": [["<strong>braking</strong>", "<b>braking</b>"], ["</em>", ""], ["<p>", "<div>"], ["<strong>braking</strong>", "<strong>braking<em></strong></em>"]],
+      "broken-car-image": [["Racer.png", "racer.png"], ["Racer.png", "Racer.jpg"], ["src=", "data-src="], ["alt=", "title="], [' alt=', 'alt=']],
+      "page-structure": [["<!doctype html>", "<!-- <!doctype html> -->"], ["</head>", ""], ["</body>", "</head>"], ["<title>Pit Wall</title>", "<!-- <title>Pit Wall</title> -->"], ["<h1>", "<body></body><h1>"]],
+      "broken-navigation": [["drivers.html", "driver.html"], ['href="drivers.html"', 'title="drivers.html"'], ["</a>", ""]],
+      "missing-file": [["../../media/", "../media/"], ["setup.html", "../../../setup.html"], ["notes/strategy.html", "notes/Strategy.html"], ['src=', 'title='], ["</a>", ""]],
+      "jump-to-garage": [["#garage", "#Garage"], ["<h1>", '<h1 id="garage">'], ["id=", "title="], ["</section>", ""]],
+      "race-broadcast": [["/embed/", "/watch?v="], ["GarageLap01", "GarageLap02"], ["title=", "name="], ["</iframe>", ""], ["youtube.com/", "youtube.com.invalid/"], ["<iframe ", "<iframe srcdoc=example "]]
+    };
+    for (const [i, m] of missions.entries()) {
+      await tab.goto(base + "mission.html?id=" + m.id);
+      for (const width of [320,375,390,768,1440]) {
+        await tab.setViewportSize({width, height:900});
+        assert(await tab.evaluate(() => document.documentElement.scrollWidth <= innerWidth), m.id + " fits " + width + "px");
+      }
+      const saved = () => state().then(value => value.missions[m.id]);
+      const expectedChapter = m.chapter === "html" ? "html-garage.html" : "links-and-paths.html";
+      assert(await tab.locator('.primary [aria-current="location"]').getAttribute("href") === expectedChapter, m.id + " chapter highlight");
+      for (const [id, neighbour] of [["#prev",missions[i-1]],["#next",missions[i+1]]]) {
+        const link = tab.locator(id);
+        assert(neighbour ? (await link.getAttribute("href")) === "mission.html?id=" + neighbour.id : await link.isHidden(), m.id + " " + id);
+      }
+      const alternatives = m.solution.replace(/<(\/?)(\w+)/g, (_,slash,name) => "<" + slash + name.toUpperCase())
+        .replaceAll('"', "'").replace("images/Racer.png", "./images/./Racer.png")
+        .replace("notes/strategy.html", "./notes/../notes/strategy.html")
+        .replace("href='drivers.html'", "title='Driver roster' href='./drivers.html'")
+        .replace("id='garage'", "id='pit-crew'").replace("#garage'", "#pit-crew'")
+        .replace("src='./images/./Racer.png' alt='Red racing car with black wheels'", "alt='Scarlet single-seater' src='./images/./Racer.png'");
+      const inputs = [m.starter, "", "<!-- " + m.solution + " -->", "<p>unfinished</p>",
+        ...(invalid[m.id] || []).map(([from,to]) => m.solution.replace(from,to))];
+      const matrix = await tab.evaluate(({id, alt, wrong}) => {
+        const mission = CodeGarage.missions.find(item => item.id === id);
+        const accepts = code => CodeGarage.checkAnswer(code, mission.rule, mission).correct;
+        return [accepts(mission.solution), accepts(alt), ...wrong.map(code => !accepts(code))];
+      }, {id:m.id, alt:alternatives, wrong:inputs});
+      assert(matrix.every(Boolean), m.id + " validation matrix (failed indexes: " + matrix.flatMap((ok,n) => ok ? [] : [n]) + ")");
+
+      if (i === 0) continue; // Full interaction coverage for mission 01 runs above.
+      await click("check");
+      assert((await text("feedback")).startsWith("Try again") && await editor.inputValue() === m.starter, m.id + " starter feedback");
+      await click("hint"); await click("hint"); await click("reveal");
+      assert(await tab.locator("#hints li").count() === 2 && await tab.locator("#hint").isDisabled() && !(await saved()).completion, m.id + " progressive help");
+      await editor.fill(alternatives);
+      await tab.reload();
+      assert(await editor.inputValue() === alternatives && (await saved()).revealed && (await saved()).hints === 2, m.id + " draft and help restore");
+      await click("run");
+      const view = tab.frameLocator("#preview");
+      if (m.number === 2) assert(await view.locator("article p strong").innerText() === "braking" && await view.locator("article p em").innerText() === "late", "Driver profile semantics render");
+      if ([3,6].includes(m.number)) {
+        await view.locator("img").waitFor();
+        await tab.waitForFunction(() => !!document.querySelector("#preview").srcdoc.includes("data:image/png"));
+        assert(await view.locator("img").evaluate(async img => { await img.decode(); return img.naturalWidth === 480; }), m.id + " virtual PNG decodes");
+        assert((await text("file-tree")).includes("Racer.png") && (await text("file-tree")).includes("(editing)"), m.id + " accessible file listing");
+      }
+      if (m.number === 4) assert((await text("tab-title")).includes("Pit Wall") && await view.getByRole("heading").innerText() === "Race Notes", "Document tab and visible heading differ");
+      const destinations = {5:[["Drivers","Driver roster"],["Home","Home"]],6:[["Setup","Setup sheet"],["Strategy","Race strategy"]],7:[["Garage","Garage"]]};
+      for (const [label, target] of destinations[m.number] ?? []) {
+        await tab.getByRole("button",{name:"Test link · " + label, exact:true}).click();
+        await view.getByText(target, {exact:true}).first().waitFor();
+        assert(tab.url().endsWith("id=" + m.id) && (await text("preview-status")).includes("Virtual destination"), m.id + " demonstrates " + label);
+        if (m.number === 7) assert(await view.getByText("Practice", {exact:true}).count() === 0, "Jump displays destination section");
+        await tab.getByRole("button",{name:"Return to edited page"}).click();
+      }
+      if (m.number === 8) {
+        await view.getByText(/Offline video preview/).waitFor();
+        assert(await view.locator("iframe").count() === 0 && (await view.locator("body").innerText()).includes(m.video), "Broadcast is simulated locally");
+      }
+      await click("check");
+      await tab.locator("#feedback").filter({ hasText: "Mission complete." }).waitFor();
+      await click("check");
+      await tab.locator("#progress").filter({ hasText: "Attempts: 3" }).waitFor();
+      await tab.reload();
+      const complete = await saved();
+      assert(complete.completion === "assisted" && complete.attempts === 3 && (await text("progress")).includes("with help"), m.id + " repeat checks and restored completion (" + complete.attempts + ", " + complete.completion + ")");
+      tab.once("dialog", d => d.dismiss()); await click("reset");
+      assert(await editor.inputValue() === alternatives, m.id + " reset cancel");
+      tab.once("dialog", d => d.accept()); await click("reset");
+      assert(await editor.inputValue() === m.starter && (await saved()).completion === "assisted", m.id + " reset retains credit");
+      if ([3,6].includes(m.number)) {
+        await view.getByText(/Image unavailable/).waitFor();
+        assert(await view.locator("img").count() === 0, m.id + " broken path cannot show the car");
+      }
+      if ([5,7].includes(m.number)) {
+        await tab.getByRole("button",{name:"Test link · " + (m.number === 5 ? "Drivers" : "Garage")}).click();
+        assert(!(await text("preview-status")).startsWith("Virtual destination"), m.id + " unresolved link gives diagnostic");
+      }
+    }
+    assert(JSON.stringify(await record()) === JSON.stringify(original), "Unrelated missions preserve the existing heading record");
+    await tab.goto(base + "index.html");
+    assert((await tab.locator("[data-chapter-progress]").allInnerTexts()).every(t => t === "4 of 4 missions complete"), "Dashboard computes both actual chapter totals");
+    for (const chapter of ["html-garage","links-and-paths"]) {
+      await tab.goto(base + chapter + ".html");
+      assert(await tab.locator("[data-mission-link]").count() === 4 && (await tab.locator("[data-chapter-progress]").innerText()) === "4 of 4 missions complete", chapter + " four playable mission records");
+    }
+    await tab.goto(base + "mission.html?id=missing-file");
+    const pathCases = await tab.evaluate(() => {
+      const mission = CodeGarage.missions.find(m => m.id === "missing-file");
+      return ["./setup.html","notes/../setup.html","../../media/Racer.png","../../media/racer.png","../../../outside","notes/missing.html","/media/Racer.png","javascript:void(0)","https://preview-check.invalid/"].map(raw => CodeGarage.virtual.resolve(mission, raw));
+    });
+    assert(pathCases.slice(0,3).every(v => v.file) && pathCases.slice(3).every(v => v.error) && pathCases[3].error.includes("capitalization") && pathCases[5].error.includes("pages/team/notes/missing.html"), "Relative path boundaries and concrete diagnostics");
+    await tab.evaluate(() => { CodeGarage.renderPreview = () => { throw new Error("Test render failure"); }; });
+    await click("run");
+    assert((await text("preview-status")).includes("could not render"), "Unexpected rendering error is recoverable");
+    await tab.evaluate(() => { CodeGarage.checkAnswer = () => { throw new Error("Test check failure"); }; });
+    await click("check");
+    assert((await text("feedback")).includes("could not finish") && await editor.inputValue() === missions[5].starter, "Unexpected checker error preserves code");
+    await tab.goto(missionURL);
+
+    // Exercise the new rendering paths with harmless canaries. Intercept every
+    // HTTP(S) origin outside this local app and fail if a request reaches routing.
+    const foreign = [];
+    await context.route("**/*", route => {
+      const url = new URL(route.request().url());
+      if (["https:", "http:"].includes(url.protocol) && url.origin !== new URL(base).origin) {
+        foreign.push(url.href);
+        return route.abort();
+      }
+      return route.continue();
+    });
+    const fixture = '<style>@import url("'+ probe +'sheet.css");p{background-image:url("'+ probe +'back.png")}</style>' +
+      '<link rel="stylesheet" href="'+probe+'other.css"><p>Local sample</p>' +
+      '<a href="javascript:void(0)" target="_top" onclick="this.textContent=123">Unsafe destination</a>' +
+      '<a href="'+probe+'away" download>Remote file</a><img src="'+probe+'image" onerror="this.alt=123">' +
+      '<iframe src="'+probe+'frame" title="External frame"></iframe><form action="'+probe+'submit"><button>Send</button></form>' +
+      '<meta http-equiv="refresh" content="0;url='+probe+'away"><script>document.title="Unexpected"</script>';
+    for (const id of ["page-structure","missing-file","jump-to-garage","race-broadcast"]) {
+      await tab.goto(base + "mission.html?id=" + id);
+      await editor.fill(id === "page-structure" ? "<!doctype html><html><head><title>Test</title></head><body>" + fixture + "</body></html>" : fixture);
+      await click("run");
+      const sandbox = tab.frameLocator("#preview");
+      await sandbox.getByText("Local sample", {exact:true}).waitFor();
+      const safety = await sandbox.locator("body").evaluate(body => {
+        let isolated = false;
+        try { void window.parent.document.body; } catch (error) { isolated = error.name === "SecurityError"; }
+        return {isolated, active:body.querySelectorAll("[href], [onclick], [onerror], [target], [download], form, script, iframe, link, meta, img[src]").length};
+      });
+      assert(safety.isolated && !safety.active, id + " sandbox, parent isolation and active attribute filtering");
+      if (id === "missing-file") {
+        await tab.getByRole("button",{name:"Test link · Unsafe destination"}).click();
+        assert((await text("preview-status")).includes("relative"), "Unsafe URL gives a path diagnostic");
+      }
+      await click("check");
+      assert(tab.url().endsWith("id=" + id) && tab.frames().length === 2 && tab.frames()[1].url() === "about:srcdoc", id + " no external frame, form or navigation");
+    }
+    assert(!foreign.length && !outbound.length, "No outbound HTTP requests reached interception during security checks");
+
+    await tab.goto(base + "mission.html?id=page-structure");
+    await tab.locator("#next").click();
+    await tab.locator("#prev").click();
+    assert(tab.url().endsWith("id=page-structure"), "Previous and next cross the chapter boundary");
+    const otherTab = await context.newPage();
+    try {
+      await otherTab.goto(base + "mission.html?id=broken-navigation");
+      await otherTab.locator("#editor").fill("separate tab draft");
+      await otherTab.goto(base + "index.html");
+      await editor.fill("another chapter draft");
+      await tab.locator("#back").click();
+      const merged = (await state()).missions;
+      assert(merged["broken-navigation"].draft === "separate tab draft" && merged["page-structure"].draft === "another chapter draft", "Navigating away flushes drafts and unrelated tab edits survive");
+    } finally { await otherTab.close(); }
+
+    // A future client may have written the same key. Leave its data untouched.
+    await tab.evaluate(k => localStorage.setItem(k, '{"version":99}'), key);
+    await tab.goto(missionURL);
+    await editor.fill(correct);
+    await click("check");
+    assert((await state()).version === 99 && (await text("progress")).includes("Completed independently"), "Future storage version is preserved while practice continues in memory");
+    for (const bad of ["{broken", '{"version":1,"missions":{"missing-heading":{"attempts":-9,"hints":"x","draft":false}}}']) {
       await tab.evaluate(([k, v]) => localStorage.setItem(k, v), [key,bad]);
       await tab.goto(missionURL);
       const recovered = await record();

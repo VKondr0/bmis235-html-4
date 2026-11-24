@@ -17,11 +17,21 @@
       }
       const saved = JSON.parse(json);
       const clean = fresh();
+      if (Number.isInteger(saved?.version) && saved.version > 1) {
+        persistent = false; // Keep newer progress intact for the version that wrote it.
+        return;
+      }
       if (saved?.version === 1) {
+        if (saved.missions && typeof saved.missions === "object" && !Array.isArray(saved.missions)) {
+          clean.missions = { ...saved.missions };
+        }
         clean.lastVisited = find(saved.lastVisited)?.id ?? null;
         for (const mission of garage.missions) {
           const record = saved.missions?.[mission.id];
-          if (!record || typeof record !== "object" || Array.isArray(record)) continue;
+          if (!record || typeof record !== "object" || Array.isArray(record)) {
+            delete clean.missions[mission.id];
+            continue;
+          }
           clean.missions[mission.id] = {
             draft: typeof record.draft === "string" ? record.draft : mission.starter,
             attempts: count(record.attempts),
@@ -79,6 +89,20 @@
     get persistent() { return persistent; }
   };
 
+  function chapterLists() {
+    for (const list of document.querySelectorAll("[data-chapter-list]")) {
+      for (const mission of garage.missions.filter(m => m.chapter === list.dataset.chapterList)) {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.dataset.missionLink = mission.id;
+        const detail = document.createElement("span");
+        detail.dataset.missionStatus = "";
+        item.append(link, detail);
+        list.append(item);
+      }
+    }
+  }
+
   function updateLinks() {
     read();
     for (const link of document.querySelectorAll("[data-mission-link]")) {
@@ -90,9 +114,15 @@
       link.href = "mission.html?id=" + encodeURIComponent(mission.id);
       link.textContent = verb + " mission " + mission.number + " · " + mission.title;
       const detail = link.parentElement.querySelector("[data-mission-status]");
-      if (detail) detail.textContent = record ? status(record) : "";
+      if (detail) detail.textContent = record ? status(record) : (id === "last" ? "" : "Available");
+    }
+    for (const detail of document.querySelectorAll("[data-chapter-progress]")) {
+      const missions = garage.missions.filter(m => m.chapter === detail.dataset.chapterProgress);
+      const completed = missions.filter(m => state.missions[m.id]?.completion).length;
+      detail.textContent = completed + " of " + missions.length + " missions complete";
     }
   }
+  chapterLists();
   updateLinks();
   window.addEventListener("pageshow", updateLinks);
   window.addEventListener("storage", event => {

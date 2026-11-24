@@ -336,3 +336,22 @@ footer { border-top: 1px solid var(--line); }
   .workbench, .answer-panel { grid-template-columns: minmax(0, 1fr); }
   .answer-panel .action { justify-self: start; }
 }
+
+.module-status, .chapter-list [data-mission-status] { display: block; color: var(--muted); font: .9rem/1.5 var(--mono); }
+.module-status { margin-top: .75rem; }
+.chapter-list { padding: 0; margin: .8rem 0 0; list-style: none; }
+.chapter-list li { border-top: 1px solid var(--line); padding-block: .7rem; }
+.chapter-list a, .mission-nav a { display: inline-block; padding-block: .4rem; font-weight: 650; }
+.expected { max-width: 72ch; margin-bottom: 1.25rem; }
+.expected strong { color: var(--text); }
+#files-panel { margin-bottom: 1rem; padding: .6rem .8rem; background: var(--inset); border-radius: .35rem; }
+#files-panel summary { cursor: pointer; font-weight: 650; }
+#file-tree, #file-tree ul { padding-left: 1.2rem; }
+#file-tree { margin-block: .5rem; font: .9rem/1.5 var(--mono); overflow-wrap: anywhere; }
+.workbench:has(#files-panel:not([hidden])) #preview { min-height: 21rem; }
+.preview-tab { padding: .4rem .65rem; color: var(--text); background: var(--inset); border: 1px solid var(--line); overflow-wrap: anywhere; }
+.preview-controls, .mission-nav { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; }
+.preview-controls:not(:empty) { margin-top: .65rem; }
+.mission-nav { justify-content: space-between; }
+.mission-nav [hidden] { display: none; }
+.tool-note, #feedback, .station-head .label, .preview-controls button { max-width: 100%; overflow-wrap: anywhere; }

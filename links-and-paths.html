@@ -12,6 +12,8 @@
   <title>Links and Paths | F1 Code Garage</title>
   <link rel="icon" href="img/garage-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
+  <script defer src="js/missions.js"></script>
+  <script defer src="js/app.js"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -43,7 +45,12 @@
       <p>From this page, the browser looks for circuits.html in the same folder. The words between the tags give the link its accessible name.</p>
       <p>Follow the example link to the <a href="circuits.html">Circuit guide</a>.</p>
     </section>
-    <p class="briefing-note">Interactive missions are planned for a later stage.</p>
+    <section class="mission-entry panel">
+      <h2>Chapter missions</h2>
+      <p data-chapter-progress="links"></p>
+      <ol class="chapter-list" data-chapter-list="links"></ol>
+      <noscript><p>Enable JavaScript to open the interactive missions.</p></noscript>
+    </section>
     <a class="text-link" href="index.html#modules">All module briefings</a>
   </main>
   <footer>
