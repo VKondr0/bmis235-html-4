@@ -1,0 +1,84 @@
+<!doctype html>
+<!--
+  Author: Vitalii Kondratiuk
+  GU username: vkondratiuk
+  Course: BMIS 235 - HTML-4
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Vitalii Kondratiuk">
+  <title>F1 Reaction Challenge | F1 Code Garage</title>
+  <link rel="icon" href="img/garage-icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="js/reaction.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="index.html" aria-label="F1 Code Garage home">
+        <span class="brand-mark">F1</span><span>Code Garage</span>
+      </a>
+      <nav class="primary" aria-label="Main navigation">
+        <a href="index.html">Mission Control</a>
+        <a href="html-garage.html">HTML Garage</a>
+        <a href="links-and-paths.html">Links and Paths</a>
+        <a href="css-lab.html">CSS Lab</a>
+        <a href="final-grand-prix.html">Final Grand Prix</a>
+        <a href="arcade.html" aria-current="page">Arcade</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main" tabindex="-1">
+    <p class="breadcrumb"><a href="index.html">Mission Control</a> / Bonus arcade</p>
+    <header class="page-heading">
+      <p class="eyebrow">Bonus arcade</p>
+      <h1>F1 Reaction Challenge</h1>
+      <p class="lead">Wait for all five red lights to go out, then click as fast as you can. On a keyboard, focus the button and use Enter or Space.</p>
+    </header>
+    <section class="reaction-game panel" aria-label="Starting grid">
+      <div class="reaction-lights" aria-hidden="true">
+          <div class="reaction-light">
+              <span></span><span></span>
+          </div>
+          <div class="reaction-light">
+              <span></span><span></span>
+          </div>
+          <div class="reaction-light">
+              <span></span><span></span>
+          </div>
+          <div class="reaction-light">
+              <span></span><span></span>
+          </div>
+          <div class="reaction-light">
+              <span></span><span></span>
+          </div>
+      </div>
+
+      <div class="reaction-result" aria-live="polite">
+          READY?
+      </div>
+
+      <p class="reaction-message">Test your reaction time</p>
+
+      <button class="reaction-button action" type="button">
+          START
+      </button>
+
+      <p class="reaction-best">Best time: --</p>
+      <noscript><p>Enable JavaScript to play the reaction game.</p></noscript>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <p>Built by <a href="mailto:vkondratiuk@zagmail.gonzaga.edu">Vitalii Kondratiuk</a> (vkondratiuk)<br>BMIS 235 · HTML-4</p>
+      <nav class="references" aria-label="Formula 1 reference pages">
+        <span>F1 reference</span>
+        <a href="drivers.html">Drivers</a> <a href="teams.html">Teams</a> <a href="circuits.html">Circuits</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
