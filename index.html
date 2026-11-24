@@ -12,6 +12,8 @@
   <title>Mission Control | F1 Code Garage</title>
   <link rel="icon" href="img/garage-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
+  <script defer src="js/missions.js"></script>
+  <script defer src="js/app.js"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -35,8 +37,10 @@
       <div class="hero-content">
         <p class="eyebrow">BMIS 235 <span>/</span> HTML-4</p>
         <h1 id="dashboard-title">Mission Control</h1>
-        <p>Your pit wall for learning HTML and CSS. Explore the module briefings or test your reflexes on the starting grid.</p>
-        <a class="action" href="#modules">Browse briefings</a>
+        <p>Your pit wall for learning HTML and CSS. Repair a team heading in the editor, explore the module briefings or test your reflexes on the starting grid.</p>
+        <a class="action" data-mission-link="last" href="mission.html?id=missing-heading">Open mission 1 · Missing Heading</a>
+        <a class="briefings-link" href="#modules">Browse briefings</a>
+        <p data-mission-status></p>
       </div>
     </section>
     <div class="dashboard">
@@ -76,6 +80,7 @@
             </a>
           </li>
         </ul>
+        <p class="briefing-note">Mission 1 is available. Missions 2–15 are planned.</p>
       </section>
       <aside class="arcade-aside" aria-labelledby="bonus-title">
         <h2 class="section-title" id="bonus-title">Bonus arcade</h2>

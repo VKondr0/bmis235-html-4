@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  Author: Vitalii Kondratiuk
+  GU username: vkondratiuk
+  Course: BMIS 235 - HTML-4
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Vitalii Kondratiuk">
+  <title>Learning mission | F1 Code Garage</title>
+  <link rel="icon" href="img/garage-icon.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="js/missions.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/checker.js"></script>
+  <script defer src="js/preview.js"></script>
+  <script defer src="js/learning.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="index.html" aria-label="F1 Code Garage home">
+        <span class="brand-mark">F1</span><span>Code Garage</span>
+      </a>
+      <nav class="primary" aria-label="Main navigation">
+        <a href="index.html">Mission Control</a>
+        <a href="html-garage.html" aria-current="location">HTML Garage</a>
+        <a href="links-and-paths.html">Links and Paths</a>
+        <a href="css-lab.html">CSS Lab</a>
+        <a href="final-grand-prix.html">Final Grand Prix</a>
+        <a href="arcade.html">Arcade</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="main" tabindex="-1">
+    <p class="breadcrumb"><a id="chapter" href="html-garage.html">HTML Garage</a> / Mission workspace</p>
+    <noscript><p>Enable JavaScript to edit, preview and check your mission.</p></noscript>
+    <p id="unavailable" hidden>This mission is unavailable. <a href="index.html#modules">Browse module briefings</a>.</p>
+    <div id="workspace" hidden>
+      <header class="page-heading mission-heading">
+        <p class="eyebrow" id="mission-meta"></p>
+        <h1 id="mission-title"></h1>
+        <p class="lead" id="objective"></p>
+      </header>
+      <p class="concept" id="concept"></p>
+      <p id="storage-note" role="status"></p>
+      <div class="workbench">
+        <section class="panel station" aria-labelledby="editor-title">
+          <header class="station-head">
+            <h2 id="editor-title"><label for="editor">Code editor</label></h2>
+            <span class="label" id="filename"></span>
+          </header>
+          <div class="code-area">
+            <div class="gutter" aria-hidden="true"><div id="lines">1</div></div>
+            <textarea id="editor" rows="9" wrap="off" spellcheck="false" autocapitalize="off"
+              autocomplete="off" aria-describedby="shortcuts" aria-keyshortcuts="Control+Enter Meta+Enter Control+Shift+Enter Meta+Shift+Enter"></textarea>
+          </div>
+          <div class="station-tools">
+            <button class="action secondary" type="button" id="run">Run Code</button>
+            <button class="plain-control" type="button" id="reset">Reset Code</button>
+          </div>
+          <p class="tool-note" id="shortcuts">Run updates the preview. In the editor, use Ctrl or ⌘ + Enter to run. Add Shift to check.</p>
+        </section>
+        <section class="panel station" aria-labelledby="preview-title">
+          <header class="station-head"><h2 id="preview-title">Visual preview</h2></header>
+          <iframe id="preview" title="Your rendered code" sandbox="" referrerpolicy="no-referrer"></iframe>
+          <p class="tool-note" id="preview-status" role="status"></p>
+        </section>
+      </div>
+      <section class="panel answer-panel" aria-labelledby="check-title">
+        <div>
+          <h2 id="check-title">Check your repair</h2>
+          <p>Check Answer reviews the code in your editor and records an attempt.</p>
+        </div>
+        <button class="action" id="check" type="button">Check Answer</button>
+        <div class="answer-result">
+          <p id="feedback" role="status"></p>
+          <p id="progress"></p>
+        </div>
+      </section>
+      <section class="panel help-panel" aria-labelledby="help-title">
+        <h2 id="help-title">Pit crew help</h2>
+        <p>Using a hint or revealing the solution before your first successful check counts as completing with help.</p>
+        <div class="help-tools">
+          <button class="action secondary" id="hint" type="button" aria-controls="hints">Show hint</button>
+          <button class="plain-control" id="reveal" type="button" aria-expanded="false" aria-controls="solution">Show Solution</button>
+        </div>
+        <ol id="hints" aria-live="polite"></ol>
+        <div id="solution" hidden>
+          <h3>One working solution</h3>
+          <pre><code id="solution-code"></code></pre>
+          <p id="explanation"></p>
+        </div>
+      </section>
+      <a class="text-link" id="back" href="html-garage.html">Back to HTML Garage</a>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <p>Built by <a href="mailto:vkondratiuk@zagmail.gonzaga.edu">Vitalii Kondratiuk</a> (vkondratiuk)<br>BMIS 235 · HTML-4</p>
+      <nav class="references" aria-label="Formula 1 reference pages">
+        <span>F1 reference</span>
+        <a href="drivers.html">Drivers</a> <a href="teams.html">Teams</a> <a href="circuits.html">Circuits</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
